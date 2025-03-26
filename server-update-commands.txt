@@ -1,0 +1,6 @@
+go to ur server directory:
+
+1)gcloud builds submit --tag gcr.io/tta-react-native/fastapi-server
+
+2)gcloud run deploy fastapi-server --image gcr.io/tta-react-native/fastapi-server --platform managed --allow-unauthenticated --cpu 1 --memory 256Mi --min-instances 0 --max-instances 1
+
