@@ -1,0 +1,7 @@
+go to : https://reactnative.dev/docs/signed-apk-android
+
+cd android
+
+.\gradlew clean
+
+.\gradlew assembleRelease
