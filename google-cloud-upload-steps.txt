@@ -1,3 +1,5 @@
+https://fastapi-server-78218016688.asia-south1.run.app/
+
 📌 Step-by-Step Guide: Deploy FastAPI on Google Cloud Run & Connect to React Native
 This guide covers everything from signing up for Google Cloud to setting up your FastAPI backend and integrating it with React Native. 🚀
 
