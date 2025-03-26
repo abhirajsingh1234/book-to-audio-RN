@@ -1,0 +1,237 @@
+📌 Step-by-Step Guide: Deploy FastAPI on Google Cloud Run & Connect to React Native
+This guide covers everything from signing up for Google Cloud to setting up your FastAPI backend and integrating it with React Native. 🚀
+
+🟢 STEP 1: Sign Up & Set Up Google Cloud
+✅ 1.1 Create a Google Cloud Account
+1️⃣ Go to Google Cloud Console
+2️⃣ Sign in with your Google account
+3️⃣ Verify your account (you may need to enter payment details, but Free Tier is available)
+4️⃣ Activate the Free Tier to get $300 credits
+
+✅ 1.2 Install Google Cloud SDK (CLI)
+📍 Download & install the Google Cloud SDK for your OS:
+Google Cloud SDK Download
+
+📍 After installation, open the terminal and initialize:
+
+sh
+Copy
+Edit
+gcloud init
+✅ Follow the prompts to sign in and set up your account.
+
+🟢 STEP 2: Create a Google Cloud Project
+📍 Run the following command to create a new project (Replace my-fastapi-project with your project name):
+
+sh
+Copy
+Edit
+gcloud projects create my-fastapi-project --set-as-default
+📍 List projects to verify:
+
+sh
+Copy
+Edit
+gcloud projects list
+✅ Copy the PROJECT_ID of your newly created project.
+
+📍 Set the active project:
+
+sh
+Copy
+Edit
+gcloud config set project my-fastapi-project
+🟢 STEP 3: Enable Required Services
+📍 Enable Cloud Run, Cloud Build, and Artifact Registry:
+
+sh
+Copy
+Edit
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+✅ This allows Cloud Run to host your FastAPI backend.
+
+🟢 STEP 4: Prepare Your FastAPI Project
+📍 Create a new FastAPI project folder:
+
+sh
+Copy
+Edit
+mkdir fastapi-app && cd fastapi-app
+📍 Create and activate a virtual environment (optional but recommended):
+
+sh
+Copy
+Edit
+python -m venv venv
+source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+📍 Install FastAPI & Uvicorn:
+
+sh
+Copy
+Edit
+pip install fastapi uvicorn
+📍 Create server.py (FastAPI backend):
+
+python
+Copy
+Edit
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import os
+
+app = FastAPI()
+
+class UserRequest(BaseModel):
+    bookname: str
+    lesson: str
+
+@app.get("/")
+def read_root():
+    return {"message": "FastAPI is running on Google Cloud Run!"}
+
+@app.post("/execute")
+def execute(user: UserRequest):
+    if not user.bookname or not user.lesson:
+        raise HTTPException(status_code=400, detail="Both fields are required")
+    
+    # Simulate audio file creation
+    file_path = f"{user.bookname}_{user.lesson}.mp3"
+    with open(file_path, "wb") as f:
+        f.write(os.urandom(1024))  # Simulated binary data
+
+    return {"file_path": file_path, "message": "Audio generated successfully"}
+✅ This API has:
+
+GET / → Returns a simple message
+
+POST /execute → Generates a simulated audio file
+
+🟢 STEP 5: Create Required Files for Deployment
+📍 Create requirements.txt:
+
+sh
+Copy
+Edit
+pip freeze > requirements.txt
+📍 Manually add the following (if missing):
+
+nginx
+Copy
+Edit
+fastapi
+uvicorn
+pydantic
+📍 Create Dockerfile:
+
+dockerfile
+Copy
+Edit
+# Use official Python image
+FROM python:3.9
+
+# Set working directory
+WORKDIR /app
+
+# Copy files
+COPY . .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port
+EXPOSE 8080
+
+# Start FastAPI
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
+✅ This Dockerfile prepares the FastAPI app for deployment.
+
+🟢 STEP 6: Deploy FastAPI to Google Cloud Run
+📍 Authenticate Docker with Google Cloud:
+
+sh
+Copy
+Edit
+gcloud auth configure-docker
+📍 Build & Submit Image to Google Cloud Artifact Registry:
+
+sh
+Copy
+Edit
+gcloud builds submit --tag gcr.io/my-fastapi-project/fastapi-server
+📍 Deploy to Cloud Run:
+
+sh
+Copy
+Edit
+gcloud run deploy fastapi-server \
+  --image gcr.io/my-fastapi-project/fastapi-server \
+  --platform managed \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --cpu 1 --memory 256Mi --min-instances 0 --max-instances 1
+✅ You will get a Cloud Run URL like:
+
+less
+Copy
+Edit
+Service [fastapi-server] deployed successfully.
+URL: https://fastapi-server-xyz.a.run.app
+📌 Save this URL! You will use it in React Native.
+
+🟢 STEP 7: Test API in Command Line
+📍 Run the following command to test API:
+
+sh
+Copy
+Edit
+curl -X POST "https://fastapi-server-xyz.a.run.app/execute" \
+  -H "Content-Type: application/json" \
+  -d "{\"bookname\": \"MindSet Secrets for Winning\", \"lesson\": \"1 The Believing Brain\"}" --output output.mp3
+✅ If successful, output.mp3 will be generated.
+
+🟢 STEP 8: Connect FastAPI to React Native
+📍 Modify api.js in your React Native project:
+
+javascript
+Copy
+Edit
+const API_URL = "https://fastapi-server-xyz.a.run.app";
+
+const fetchAudio = async () => {
+  try {
+    const response = await fetch(`${API_URL}/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookname: "MindSet Secrets for Winning",
+        lesson: "1 The Believing Brain"
+      }),
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch audio");
+
+    const blob = await response.blob();  // Convert response to audio file
+    const audioUrl = URL.createObjectURL(blob);
+
+    console.log("Audio File URL:", audioUrl);
+    return audioUrl;
+  } catch (error) {
+    console.error("Error fetching audio:", error);
+  }
+};
+📍 Call fetchAudio() in your React Native component:
+
+javascript
+Copy
+Edit
+import { useEffect } from "react";
+
+const MyComponent = () => {
+  useEffect(() => {
+    fetchAudio();
+  }, []);
+
+  return null;
+};
+✅ Your React Native app will now fetch the generated audio file from FastAPI. 🎉
+
